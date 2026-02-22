@@ -217,24 +217,29 @@ Untested UI components:
 
 ---
 
-#### 2.9 Injected Scripts — Large files with indirect-only coverage
+#### 2.9 Injected Scripts — Large files with mixed coverage
 
-**Source**: `packages/injected/src/` (22 files, several very large)
+**Source**: `packages/injected/src/` (22 files, 7,719 LOC total, several very large)
 
-| File | Lines | Direct Tests? |
-|------|-------|---------------|
-| `recorder/recorder.ts` | 1,959 | No |
-| `injectedScript.ts` | 1,813 | No |
-| `roleUtils.ts` | 1,235 | No |
-| `clock.ts` | 792 | Partial (clock.spec.ts) |
-| `ariaSnapshot.ts` | 747 | Partial |
-| `selectorEvaluator.ts` | 602 | No |
-| `selectorGenerator.ts` | 581 | No |
-| `webSocketMock.ts` | 363 | No |
+| File | Lines | Direct Tests? | Notes |
+|------|-------|---------------|-------|
+| `recorder/recorder.ts` | 1,959 | No | Largest file, only indirect coverage |
+| `injectedScript.ts` | 1,813 | No | Core evaluation logic, only indirect |
+| `roleUtils.ts` | 1,235 | **Yes** | `role-utils.spec.ts` (24.9K lines) |
+| `clock.ts` | 792 | **Yes** | `clock.spec.ts` (unit test) |
+| `ariaSnapshot.ts` | 747 | **Yes** | `page-aria-snapshot.spec.ts` + 13 test files |
+| `selectorEvaluator.ts` | 602 | No | No explicit test coverage |
+| `selectorGenerator.ts` | 581 | **Yes** | `selector-generator.spec.ts` (26.7K lines) |
+| `webSocketMock.ts` | 363 | No | No dedicated tests |
+| `highlight.ts` | 288 | Partial | Only `locator-highlight.spec.ts` |
+| `storageScript.ts` | 210 | No | No dedicated tests |
+| `roleSelectorEngine.ts` | 198 | No | No dedicated tests |
+| `domUtils.ts` | 175 | No | No dedicated tests |
+| `consoleApi.ts` | 147 | No | Only 1 reference |
 
-**Risk**: These scripts run inside the browser and are the foundation of element selection, ARIA snapshot generation, and recording. `roleUtils.ts` (1,235 lines) implements complex ARIA role computation. `selectorGenerator.ts` generates the locators users see. Bugs here directly cause incorrect test results.
+**Risk**: These scripts run inside the browser and are the foundation of element selection, ARIA snapshot generation, and recording. While `roleUtils.ts` and `selectorGenerator.ts` have good dedicated tests, the two largest files — `injectedScript.ts` (1,813 lines of core evaluation logic) and `recorder/recorder.ts` (1,959 lines) — have zero direct tests. `selectorEvaluator.ts` (602 lines) also lacks explicit coverage.
 
-**Recommendation**: Add unit tests for `roleUtils.ts` ARIA role computation (test with complex ARIA patterns, dynamic roles, implicit vs explicit roles). Add tests for `selectorGenerator.ts` covering all selector strategies. Add tests for `selectorEvaluator.ts` with complex selector expressions.
+**Recommendation**: Add unit tests for `injectedScript.ts` core evaluation paths. Add tests for `selectorEvaluator.ts` with complex selector expressions. Add tests for `webSocketMock.ts`, `domUtils.ts`, and `storageScript.ts`.
 
 ---
 
@@ -259,34 +264,85 @@ Untested UI components:
 
 ### MODERATE: Areas Worth Improving
 
-#### 2.11 Test Runner Internals
+#### 2.11 Test Runner Internals — 20 files, 4,494 LOC, many with zero test references
 
-Some runner modules have thin coverage:
-- `watchMode.ts` — Only 1 test file (`watch.spec.ts`)
-- `sigIntWatcher.ts` — Signal handling (hard to test but important)
-- `failureTracker.ts` — Failure tracking logic
-- `testGroups.ts` — Test grouping/batching
-- `projectUtils.ts` — Multi-project configuration handling
-- `vcs.ts` — Version control integration
+The runner module has extensive code with many files having **zero direct test references**:
 
-**Recommendation**: Add focused tests for watch mode edge cases (file rename detection, config change handling). Add tests for test grouping with complex project dependency graphs.
+**Zero test references (12 files):**
+- `failureTracker.ts` (89 lines) — Failure tracking logic
+- `projectUtils.ts` (250 lines) — Complex project filtering/matching
+- `testGroups.ts` (173 lines) — Test grouping/batching
+- `taskRunner.ts` (146 lines) — Task execution framework
+- `workerHost.ts` (116 lines) — Worker process management
+- `processHost.ts` (186 lines) — Process lifecycle
+- `loaderHost.ts` (84 lines) — Test file loading
+- `sigIntWatcher.ts` (105 lines) — Signal handling
+- `lastRun.ts` (77 lines) — Last run persistence
+- `storage.ts` (80 lines) — Storage utilities
+- `vcs.ts` (58 lines) — Version control integration
+- `rebase.ts` (205 lines) — Snapshot rebasing logic
+
+**Thin coverage:**
+- `loadUtils.ts` (382 lines) — Core test discovery, only 1 test reference
+- `testServer.ts` (342 lines) — Limited coverage
+
+**Well covered:**
+- `watchMode.ts` (433 lines) — `watch.spec.ts` (31.5K lines)
+- `dispatcher.ts` (670 lines) — 115 test references via integration tests
+- `testRunner.ts` (496 lines) — `runner.spec.ts` (30.7K lines)
+
+**Recommendation**: Add focused unit tests for `projectUtils.ts` (project dependency graphs, filtering), `testGroups.ts` (batching logic), `loadUtils.ts` (test discovery edge cases), and `rebase.ts` (snapshot rebasing). Add tests for `failureTracker.ts` state management.
 
 ---
 
-#### 2.12 Reporter Edge Cases
+#### 2.12 Reporter Edge Cases — 17 files, 4,562 LOC
 
-While most reporters have test files, several source modules lack dedicated coverage:
-- `teleEmitter.ts` — Telemetry event emission
-- `multiplexer.ts` — Multi-reporter coordination
-- `internalReporter.ts` — Internal reporting framework
-- `listModeReporter.ts` — List mode output
-- `blobV1.ts` — Legacy blob format
+While most reporters have dedicated test files, several source modules lack coverage:
 
-**Recommendation**: Add tests for the multiplexer (concurrent reporters, error in one reporter not blocking others). Add backward-compatibility tests for `blobV1.ts`.
+**Well tested (10 reporters with dedicated spec files):**
+- `base.ts`, `html.ts`, `json.ts`, `junit.ts`, `list.ts`, `blob.ts`, `dot.ts`, `line.ts`, `github.ts`, `markdown.ts`
+
+**No dedicated coverage (7 files):**
+- `merge.ts` (681 lines) — Complex report merging logic, only indirect coverage through `reporter-blob.spec.ts`
+- `teleEmitter.ts` (352 lines) — Event serialization, zero direct test references
+- `reporterV2.ts` (148 lines) — Reporter interface adapter, no tests
+- `internalReporter.ts` (149 lines) — Internal framework, no tests
+- `multiplexer.ts` (131 lines) — Multi-reporter coordination, no tests
+- `listModeReporter.ts` (70 lines) — List mode output, minimal references
+- `blobV1.ts` — Legacy blob format, no backward-compat tests
+
+**Recommendation**: Add dedicated tests for `merge.ts` (report merging edge cases: conflicting data, partial reports, format versions). Add tests for the `multiplexer.ts` (concurrent reporters, error isolation). Add backward-compatibility tests for `blobV1.ts`.
 
 ---
 
-#### 2.13 Electron Integration — 2 source files, 3 test files
+#### 2.13 Common Utilities (`packages/playwright/src/common/`) — 14 files, 2,673 LOC
+
+**Zero direct test references (8 files):**
+- `validators.ts` (70 lines) — Zod schema validation, untested in isolation
+- `ipc.ts` (197 lines) — Inter-process communication logic
+- `process.ts` (154 lines) — Process management utilities
+- `suiteUtils.ts` (139 lines) — Test suite utilities
+- `testLoader.ts` (100 lines) — Module/file loading
+- `poolBuilder.ts` (93 lines) — Worker pool construction
+- `esmLoaderHost.ts` (93 lines) — ESM loader hosting
+- `globals.ts` (44 lines) — Global state management
+
+**Well covered through integration tests:**
+- `config.ts` (317 lines) — via `config.spec.ts` (23K lines)
+- `fixtures.ts` (361 lines) — via `fixtures.spec.ts` (27K lines)
+- `configLoader.ts` (376 lines) — via config/loader tests
+
+**Recommendation**: Add unit tests for `validators.ts` (schema edge cases), `ipc.ts` (message serialization), and `poolBuilder.ts` (pool sizing logic).
+
+---
+
+#### 2.14 Matchers/Assertions — Well Covered
+
+The matchers module (9 files, 2,076 LOC in `packages/playwright/src/matchers/`) is one of the **best-tested** areas, with comprehensive coverage through `expect.spec.ts` (45.6K lines), `to-have-screenshot.spec.ts` (63.6K lines), and dedicated ARIA snapshot tests. No significant gaps identified.
+
+---
+
+#### 2.16 Electron Integration — 2 source files, 3 test files
 
 **Source**: `packages/playwright-core/src/server/electron/` (2 files)
 **Tests**: `tests/electron/` (3 spec files)
@@ -299,7 +355,7 @@ Electron testing is inherently complex and the current tests appear thin. Consid
 
 ---
 
-#### 2.14 Android Automation — 2 source files, 5 test files
+#### 2.17 Android Automation — 2 source files, 5 test files
 
 **Source**: `packages/playwright-core/src/server/android/` (2 files)
 **Tests**: `tests/android/` (5 spec files)
@@ -308,7 +364,7 @@ The ratio is decent but given the complexity of Android automation (device disco
 
 ---
 
-#### 2.15 Component Testing Frameworks — Uneven Coverage
+#### 2.18 Component Testing Frameworks — Uneven Coverage
 
 While `tests/components/` has 56 spec files, the coverage is split across 6 framework variants. Verify that each framework gets equal attention:
 - React (Vite) — likely best covered
@@ -336,19 +392,20 @@ While `tests/components/` has 56 spec files, the coverage is split across 6 fram
 | # | Area | Action | Estimated Effort |
 |---|------|--------|-----------------|
 | 5 | **AI Agent Framework** | Expand agent tests: error recovery, timeouts, concurrent ops, stale elements | Medium |
-| 6 | **Injected Scripts** | Unit tests for roleUtils (ARIA), selectorGenerator, selectorEvaluator | Medium |
-| 7 | **HTML Reporter** | Component tests for filter logic, gantt rendering, edge cases | Small |
-| 8 | **Trace Viewer** | Tests for trace loading (all versions), timeline, filtering | Medium |
+| 6 | **Runner Internals** | Unit tests for projectUtils, testGroups, loadUtils, failureTracker, rebase (12+ files with zero refs) | Large |
+| 7 | **Injected Scripts** | Unit tests for injectedScript.ts (1,813 LOC), selectorEvaluator.ts (602 LOC) | Medium |
+| 8 | **HTML Reporter** | Component tests for filter logic, gantt rendering, edge cases | Small |
+| 9 | **Trace Viewer** | Tests for trace loading (all versions), timeline, filtering | Medium |
 
 ### Tier 3 — Moderate (Improve robustness)
 
 | # | Area | Action | Estimated Effort |
 |---|------|--------|-----------------|
-| 9 | **Stress Tests** | Expand to cover memory leaks, network interception overhead, large suites | Medium |
-| 10 | **Watch Mode** | Edge cases: file renames, config changes, error recovery | Small |
-| 11 | **Reporter Multiplexer** | Concurrent reporter tests, error isolation | Small |
-| 12 | **Trace Version Compat** | Backward-compat tests for trace V3-V8 formats | Small |
-| 13 | **Recorder UI** | Edge cases: shadow DOM, iframes, web components | Medium |
+| 10 | **Reporter merge.ts** | Dedicated tests for report merging (681 LOC), teleEmitter, multiplexer | Medium |
+| 11 | **Common Utilities** | Unit tests for validators.ts, ipc.ts, poolBuilder.ts | Small |
+| 12 | **Stress Tests** | Expand to cover memory leaks, network interception overhead, large suites | Medium |
+| 13 | **Trace Version Compat** | Backward-compat tests for trace V3-V8 formats | Small |
+| 14 | **Recorder UI** | Edge cases: shadow DOM, iframes, web components | Medium |
 
 ---
 
