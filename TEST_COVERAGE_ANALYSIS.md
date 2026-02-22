@@ -437,6 +437,41 @@ This plugin captures git metadata (commit hash, branch, author) for test reports
 
 ---
 
+### CROSS-CUTTING: Error Handling and Edge Cases
+
+#### 2.21 Error Handling — Significant gaps across the codebase
+
+While Playwright has good coverage for common error scenarios (target closed, timeouts, page errors, HTTPS certificate errors), several critical error paths lack testing:
+
+**Critical error handling gaps:**
+- **PipeTransport JSON.parse()** (`pipeTransport.ts` lines 76-88) — No error handling for malformed JSON messages; could crash the entire transport. The WebSocket transport (`transport.ts`) handles this correctly, but `PipeTransport` does not.
+- **Protocol validator unit tests** — `ValidationError` is thrown but never tested. Zero dedicated tests for the validation framework despite complex type checking logic.
+- **Serialization edge cases** — Only 2 tests exist (circular objects, BigInt). Missing: invalid ref IDs, circular reference detection, null stack traces, custom Error subclasses, handle validation failures.
+- **Remote connection** — `playwrightServer.ts` line 99 has an empty catch block for JSON.parse. WebSocket message callback exceptions are swallowed.
+
+**Network-level error gaps:**
+- DNS resolution failures (ENOTFOUND, ECONNREFUSED) — not tested
+- Connection reset errors (ECONNRESET) — not tested
+- Happy Eyeballs IPv4/IPv6 fallback edge cases — not tested
+- Proxy connection failures — not tested
+
+**Process-level error gaps:**
+- Missing executable (ENOENT) — not tested
+- Permission denied (EACCES) — not tested
+- Spawn timeout and signal handling — not tested
+
+**Well covered error scenarios:**
+- Page error events (116 test cases)
+- Target closed errors (402+ test references)
+- Browser crash handling (crash event, navigation cancellation, context closure)
+- WebSocket connection errors and reconnection (52 tests)
+- Network timeouts and fetch abort scenarios
+- Corrupted response bodies (gzip, brotli, deflate)
+
+**Recommendation**: Fix the `PipeTransport` JSON.parse vulnerability (add try-catch). Add unit tests for protocol validators and serialization edge cases. Add network-level error tests for DNS failures and connection resets.
+
+---
+
 ## 3. Prioritized Recommendations
 
 ### Tier 1 — Critical (High risk, foundational code)
@@ -447,29 +482,30 @@ This plugin captures git metadata (commit hash, branch, author) for test reports
 | 2 | **Dispatchers/RPC** | Add unit tests for core dispatcher framework + integration tests for complex dispatchers | Large |
 | 3 | **Parser Unit Tests** | Unit tests for CSS parser, selector parser, locator parser, ARIA snapshot parser | Medium |
 | 4 | **Server Utilities** | Unit tests for happyEyeballs, socksProxy, comparators, zones, crypto | Medium |
+| 5 | **Error Handling** | Fix PipeTransport JSON.parse gap; add protocol validator + serialization edge case tests | Medium |
 
 ### Tier 2 — High (User-facing features, newer code)
 
 | # | Area | Action | Estimated Effort |
 |---|------|--------|-----------------|
-| 5 | **AI Agent Framework** | Expand agent tests: error recovery, timeouts, concurrent ops, stale elements | Medium |
-| 6 | **Runner Internals** | Unit tests for projectUtils, testGroups, loadUtils, failureTracker, rebase (12+ files with zero refs) | Large |
-| 7 | **Injected Scripts** | Unit tests for injectedScript.ts (1,813 LOC), selectorEvaluator.ts (602 LOC) | Medium |
-| 8 | **HTML Reporter** | Component tests for filter logic, gantt rendering, edge cases | Small |
-| 9 | **Trace Viewer** | Tests for trace loading (all versions), timeline, filtering | Medium |
+| 6 | **AI Agent Framework** | Expand agent tests: error recovery, timeouts, concurrent ops, stale elements | Medium |
+| 7 | **Runner Internals** | Unit tests for projectUtils, testGroups, loadUtils, failureTracker, rebase (12+ files with zero refs) | Large |
+| 8 | **Injected Scripts** | Unit tests for injectedScript.ts (1,813 LOC), selectorEvaluator.ts (602 LOC) | Medium |
+| 9 | **HTML Reporter** | Component tests for filter logic, gantt rendering, edge cases | Small |
+| 10 | **Trace Viewer** | Tests for trace loading (all versions), timeline, filtering | Medium |
 
 ### Tier 3 — Moderate (Improve robustness)
 
 | # | Area | Action | Estimated Effort |
 |---|------|--------|-----------------|
-| 10 | **MCP Untested Tools** | Tests for 15 untested browser tools (checkbox, forward/reload, low-level events, video) | Medium |
-| 11 | **Reporter merge.ts** | Dedicated tests for report merging (681 LOC), teleEmitter, multiplexer | Medium |
-| 12 | **Common Utilities** | Unit tests for validators.ts, ipc.ts, poolBuilder.ts | Small |
-| 13 | **Stress Tests** | Expand to cover memory leaks, network interception overhead, large suites | Medium |
-| 14 | **Trace Version Compat** | Backward-compat tests for trace V3-V8 formats | Small |
-| 15 | **Recorder UI** | Edge cases: shadow DOM, iframes, web components | Medium |
-| 16 | **CLI Commands** | Tests for show-trace, uninstall, pdf/screenshot commands with error cases | Small |
-| 17 | **Git Commit Plugin** | Tests for gitCommitInfoPlugin.ts (detached HEAD, shallow clones, missing git) | Small |
+| 11 | **MCP Untested Tools** | Tests for 15 untested browser tools (checkbox, forward/reload, low-level events, video) | Medium |
+| 12 | **Reporter merge.ts** | Dedicated tests for report merging (681 LOC), teleEmitter, multiplexer | Medium |
+| 13 | **Common Utilities** | Unit tests for validators.ts, ipc.ts, poolBuilder.ts | Small |
+| 14 | **Stress Tests** | Expand to cover memory leaks, network interception overhead, large suites | Medium |
+| 15 | **Trace Version Compat** | Backward-compat tests for trace V3-V8 formats | Small |
+| 16 | **Recorder UI** | Edge cases: shadow DOM, iframes, web components | Medium |
+| 17 | **CLI Commands** | Tests for show-trace, uninstall, pdf/screenshot commands with error cases | Small |
+| 18 | **Git Commit Plugin** | Tests for gitCommitInfoPlugin.ts (detached HEAD, shallow clones, missing git) | Small |
 
 ---
 
