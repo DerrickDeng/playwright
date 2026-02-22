@@ -168,7 +168,40 @@ Also: `packages/playwright/src/agents/generateAgents.ts` (386 lines) and `agentP
 
 ---
 
-#### 2.6 HTML Reporter — 26 source files, 1 test file
+#### 2.6 MCP (Model Context Protocol) — 60 source files, 65 test files, but 15 tools untested
+
+**Source**: `packages/playwright/src/mcp/` (60 source files, ~220 KB)
+**Tests**: `tests/mcp/` (65 spec files, ~266 KB)
+
+MCP has good overall coverage (77.3% of browser tools tested), but 15 specific tools have **zero test coverage**:
+
+**Untested browser tools (high priority):**
+- `browser_check` / `browser_uncheck` — Checkbox interaction
+- `browser_navigate_forward` / `browser_reload` — Navigation actions
+- `browser_keydown` / `browser_keyup` — Low-level keyboard events
+- `browser_mouse_down` / `browser_mouse_up` / `browser_mouse_wheel` — Low-level mouse events
+- `browser_console_clear` — Console management
+
+**Untested browser tools (medium priority):**
+- `browser_network_clear` — Network log management
+- `browser_devtools_start` / `browser_devtools_stop` — DevTools server control
+- `browser_start_video` / `browser_stop_video` — Video recording
+
+**Minimally tested tools (1-2 references only):**
+- `browser_press_sequentially`, `browser_generate_locator`, `browser_navigate_back`, `browser_hover`, `browser_drag`, `browser_get_config`
+
+**Well covered:** Test tools are 100% tested (9/9). Navigation, form interaction, cookies, storage, and verification are well-tested. CLI terminal tests provide good secondary coverage via 26+ `cli-*.spec.ts` files.
+
+**Untested source modules:**
+- `packages/playwright/src/mcp/extension/cdpRelay.ts` (15K) — CDP relay for extensions, limited coverage
+- `packages/playwright/src/mcp/browser/watchdog.ts` — Session watchdog, no dedicated tests
+- `packages/playwright/src/mcp/browser/sessionLog.ts` — Session logging, minimal coverage
+
+**Recommendation**: Add tests for the 15 untested browser tools (especially checkbox, navigation forward/reload, and video recording). Add tests for the extension CDP relay. Add dedicated keyboard and mouse low-level event tests.
+
+---
+
+#### 2.7 HTML Reporter — 26 source files, 1 test file
 
 **Source**: `packages/html-reporter/src/` (26 TSX/TS/CSS files)
 **Tests**: `tests/playwright-test/reporter-html.spec.ts` (single file)
@@ -187,7 +220,7 @@ Untested UI components:
 
 ---
 
-#### 2.7 Trace Viewer — 43 source files, 1 test file
+#### 2.8 Trace Viewer — 43 source files, 1 test file
 
 **Source**: `packages/trace-viewer/src/` (43 TSX/TS/CSS files)
 **Tests**: `tests/library/trace-viewer.spec.ts` (single file)
@@ -206,7 +239,7 @@ Untested UI components:
 
 ---
 
-#### 2.8 Recorder UI — 7 source files, indirect coverage only
+#### 2.9 Recorder UI — 7 source files, indirect coverage only
 
 **Source**: `packages/recorder/src/` (7 files including `recorder.tsx` at 1,959 lines)
 **Tests**: Tested indirectly through `tests/library/inspector/cli-codegen-*.spec.ts` and `recorder-api.spec.ts`, but no direct component tests.
@@ -217,7 +250,7 @@ Untested UI components:
 
 ---
 
-#### 2.9 Injected Scripts — Large files with mixed coverage
+#### 2.10 Injected Scripts — Large files with mixed coverage
 
 **Source**: `packages/injected/src/` (22 files, 7,719 LOC total, several very large)
 
@@ -243,7 +276,7 @@ Untested UI components:
 
 ---
 
-#### 2.10 Stress and Performance Testing — 4 spec files
+#### 2.11 Stress and Performance Testing — 4 spec files
 
 **Source**: `tests/stress/` (4 spec files, 233 total lines)
 - `heap.spec.ts` (118 lines)
@@ -264,7 +297,7 @@ Untested UI components:
 
 ### MODERATE: Areas Worth Improving
 
-#### 2.11 Test Runner Internals — 20 files, 4,494 LOC, many with zero test references
+#### 2.12 Test Runner Internals — 20 files, 4,494 LOC, many with zero test references
 
 The runner module has extensive code with many files having **zero direct test references**:
 
@@ -295,7 +328,7 @@ The runner module has extensive code with many files having **zero direct test r
 
 ---
 
-#### 2.12 Reporter Edge Cases — 17 files, 4,562 LOC
+#### 2.13 Reporter Edge Cases — 17 files, 4,562 LOC
 
 While most reporters have dedicated test files, several source modules lack coverage:
 
@@ -315,7 +348,7 @@ While most reporters have dedicated test files, several source modules lack cove
 
 ---
 
-#### 2.13 Common Utilities (`packages/playwright/src/common/`) — 14 files, 2,673 LOC
+#### 2.14 Common Utilities (`packages/playwright/src/common/`) — 14 files, 2,673 LOC
 
 **Zero direct test references (8 files):**
 - `validators.ts` (70 lines) — Zod schema validation, untested in isolation
@@ -336,7 +369,7 @@ While most reporters have dedicated test files, several source modules lack cove
 
 ---
 
-#### 2.14 Matchers/Assertions — Well Covered
+#### 2.15 Matchers/Assertions — Well Covered
 
 The matchers module (9 files, 2,076 LOC in `packages/playwright/src/matchers/`) is one of the **best-tested** areas, with comprehensive coverage through `expect.spec.ts` (45.6K lines), `to-have-screenshot.spec.ts` (63.6K lines), and dedicated ARIA snapshot tests. No significant gaps identified.
 
