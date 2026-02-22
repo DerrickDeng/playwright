@@ -409,6 +409,34 @@ While `tests/components/` has 56 spec files, the coverage is split across 6 fram
 
 ---
 
+#### 2.19 CLI Commands — Several commands lack dedicated tests
+
+**Source**: `packages/playwright-core/src/cli/program.ts` (744 lines, 14 commands)
+
+**Well covered**: `codegen`, `install`, `open`, `cr`/`ff`/`wk` (via codegen and MCP tests)
+
+**No dedicated CLI tests:**
+- `show-trace` — No tests for trace viewer launch via CLI
+- `run-driver` / `run-server` / `launch-server` — Hidden server commands, untested in isolation
+- `uninstall` — No specific CLI tests for browser uninstallation
+- `mark-docker-image` — Hidden Docker command, untested
+- `pdf` / `screenshot` — Partial coverage via library tests, no dedicated CLI tests
+
+**Recommendation**: Add CLI-level tests for `show-trace`, `uninstall`, and `screenshot`/`pdf` commands with error cases (invalid URLs, missing permissions, disk full).
+
+---
+
+#### 2.20 Git Commit Info Plugin — 197 lines, zero dedicated tests
+
+**Source**: `packages/playwright/src/plugins/gitCommitInfoPlugin.ts` (197 lines)
+**Tests**: No dedicated tests found.
+
+This plugin captures git metadata (commit hash, branch, author) for test reports. It has no test coverage despite interacting with the git CLI and report metadata.
+
+**Recommendation**: Add tests for git metadata capture (normal repos, detached HEAD, shallow clones, missing git), and verify metadata appears correctly in reports.
+
+---
+
 ## 3. Prioritized Recommendations
 
 ### Tier 1 — Critical (High risk, foundational code)
@@ -434,11 +462,14 @@ While `tests/components/` has 56 spec files, the coverage is split across 6 fram
 
 | # | Area | Action | Estimated Effort |
 |---|------|--------|-----------------|
-| 10 | **Reporter merge.ts** | Dedicated tests for report merging (681 LOC), teleEmitter, multiplexer | Medium |
-| 11 | **Common Utilities** | Unit tests for validators.ts, ipc.ts, poolBuilder.ts | Small |
-| 12 | **Stress Tests** | Expand to cover memory leaks, network interception overhead, large suites | Medium |
-| 13 | **Trace Version Compat** | Backward-compat tests for trace V3-V8 formats | Small |
-| 14 | **Recorder UI** | Edge cases: shadow DOM, iframes, web components | Medium |
+| 10 | **MCP Untested Tools** | Tests for 15 untested browser tools (checkbox, forward/reload, low-level events, video) | Medium |
+| 11 | **Reporter merge.ts** | Dedicated tests for report merging (681 LOC), teleEmitter, multiplexer | Medium |
+| 12 | **Common Utilities** | Unit tests for validators.ts, ipc.ts, poolBuilder.ts | Small |
+| 13 | **Stress Tests** | Expand to cover memory leaks, network interception overhead, large suites | Medium |
+| 14 | **Trace Version Compat** | Backward-compat tests for trace V3-V8 formats | Small |
+| 15 | **Recorder UI** | Edge cases: shadow DOM, iframes, web components | Medium |
+| 16 | **CLI Commands** | Tests for show-trace, uninstall, pdf/screenshot commands with error cases | Small |
+| 17 | **Git Commit Plugin** | Tests for gitCommitInfoPlugin.ts (detached HEAD, shallow clones, missing git) | Small |
 
 ---
 
